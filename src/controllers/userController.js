@@ -111,31 +111,7 @@ exports.userLogin = async (req, res) => {
       }
     }
 
-    exports.getConversationById = async (req, res) => {
-      try{
-        const { conversation_id } = req.params;
-        
-        const conversation = await pool.query('SELECT * FROM conversation WHERE conversation_id = $1',[conversation_id]);
-        if(conversation.rows.length === 0){
-          return res.status(404).json({message: 'conversation not found'})
-        }
-
-        const query = await pool.query('SELECT * FROM query WHERE conversation_id = $1 ORDER BY timestamp', [conversation_id]);
-
-        const response = await pool.query('SELECT * FROM ai_response WHERE conversation_id = $1 ORDER BY timestamp', [conversation_id])
-
-        res.status(200).json({
-          conversation:conversation.rows[0],
-          query: query.rows,
-          response: response.rows
-        })
-
-      }catch(error){
-        console.error(error.message)
-
-      }
-    }
-
+    
     exports.continueConversation = async (req, res) => {
       try{
         const {user_id, conversation_id, query_text} = req.body;
@@ -146,12 +122,12 @@ exports.userLogin = async (req, res) => {
         
         const queryTimestamp = new Date(); 
         const query = await pool.query('INSERT INTO query  (conversation_id, query_data, timestamp) VALUES ($1, $2, $3) RETURNING *', [conversation_id, query_text, queryTimestamp]);
-
+        
         const aiResponse = await getAiResponse(query_text);
         const responseTimestamp = new Date();
 
         const response = await pool.query('INSERT INTO ai_response (conversation_id, conversation_data, timestamp) VALUES ($1, $2, $3) RETURNING *', [conversation_id, aiResponse, responseTimestamp])
-
+        
         res.status(201).json({
           conversation: conversation.rows,
           query: query.rows[0],
@@ -162,6 +138,76 @@ exports.userLogin = async (req, res) => {
       }catch(err){
         console.error(err.message)
       }
+      
+    }
+    
+// get all conversation by title and first query and response
+exports.getAllConversation = async (req, res) => {
+  const { userId } = req.params;
 
+  const query = `
+  SELECT 
+  c.conversation_id,
+  c.user_id,
+  c.started_at,
+  c.ended_at,
+  q.query_data AS first_query,
+  r.conversation_data AS first_response
+  FROM 
+  conversation c
+  JOIN 
+  query q ON c.conversation_id = q.conversation_id
+  JOIN 
+  ai_response r ON c.conversation_id = r.conversation_id
+  WHERE 
+  q.timestamp = (
+              SELECT MIN(q2.timestamp)
+              FROM query q2
+              WHERE q2.conversation_id = c.conversation_id
+          )
+          AND r.timestamp = (
+            SELECT MIN(r2.timestamp)
+            FROM ai_response r2
+            WHERE r2.conversation_id = c.conversation_id
+            )
+            AND c.user_id = $1
+            ORDER BY 
+            c.started_at DESC;
+  `;
+
+  try {
+      const result = await pool.query(query, [userId]);
+      res.status(200).json({ conversations: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error fetching conversation history' });
+  }
+}
+
+
+// Get conversation by id
+exports.getConversationById = async (req, res) => {
+  const { conversation_id } = req.params;
+  // console.log(conversation_id)
+  try{
+    
+    const conversation = await pool.query('SELECT conversation_id FROM conversation WHERE conversation_id = $1',[conversation_id]);
+    if(conversation.rows.length === 0){
+      return res.status(404).json({message: 'conversation not found'})
     }
 
+    const query = await pool.query('SELECT query_id, query_data, timestamp FROM query WHERE conversation_id = $1 ORDER BY timestamp', [conversation_id]);
+
+    const response = await pool.query('SELECT response_id, conversation_data, timestamp FROM ai_response WHERE conversation_id = $1 ORDER BY timestamp', [conversation_id])
+
+    res.status(200).json({
+      conversation:conversation.rows[0],
+      query: query.rows,
+      response: response.rows
+    })
+
+  }catch(error){
+    console.error(error.message)
+
+  }
+}

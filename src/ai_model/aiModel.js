@@ -2,11 +2,11 @@ const axios = require('axios');
 
 async function getAiResponse() {
     try {
-        const question = "who born in south africa?";
+        const question = "who born in africa?";
         const context =
             "Elon Musk was born in Pretoria, South Africa. Trees are vital for life on Earth, providing oxygen, absorbing carbon dioxide, and offering shade and shelter. They prevent soil erosion, support biodiversity, and enhance natural beauty.";
 
-        const response = await axios.post(
+        const response = await axios.post(      
             'https://api-inference.huggingface.co/models/deepset/roberta-base-squad2',
             {
                 inputs: { question, context },
