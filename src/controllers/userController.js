@@ -60,7 +60,7 @@ exports.userLogin = async (req, res) => {
         user: user.rows[0],
         conversation: conversation.rows
       }
-      res.status(200).json({token,dashboardData});
+      res.status(200).json({token});
 
   } catch (err) {
     console.error(err.message);
@@ -113,26 +113,37 @@ exports.userLogin = async (req, res) => {
 
     
     exports.continueConversation = async (req, res) => {
-      try{
+      console.log('Request received:', {
+        method: req.method,
+        headers: req.headers,
+        body: req.body,
+    });      try{
         const {user_id, conversation_id, query_text} = req.body;
         const conversation = await pool.query('SELECT * FROM conversation WHERE conversation_id = $1', [conversation_id])
         if(conversation.rows.length === 0 ){
           return res.status(404).json({message: 'Conversation not found'});
         }
         
+        const aiResponse = await getAiResponse(query_text);
+        if(!!aiResponse.answer){
+          return res.status(404).json({message: 'Something went wrong'});
+        }
         const queryTimestamp = new Date(); 
         const query = await pool.query('INSERT INTO query  (conversation_id, query_data, timestamp) VALUES ($1, $2, $3) RETURNING *', [conversation_id, query_text, queryTimestamp]);
         
-        const aiResponse = await getAiResponse(query_text);
+        // const aiResponse = JSON.stringify(new Date())
         const responseTimestamp = new Date();
 
         const response = await pool.query('INSERT INTO ai_response (conversation_id, conversation_data, timestamp) VALUES ($1, $2, $3) RETURNING *', [conversation_id, aiResponse, responseTimestamp])
-        
-        res.status(201).json({
+
+        const finalData = {
           conversation: conversation.rows,
           query: query.rows[0],
           response: response.rows[0]
-        })
+        }
+        console.log(finalData)
+        
+        res.status(201).json( finalData )
         
 
       }catch(err){
