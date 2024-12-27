@@ -6,16 +6,13 @@ const userRoutes = require('./routes/userRoutes');
 const adminRoutes = require('./routes/adminRoutes')
 app.use(express.json());
 app.use(cors({
-    origin: 'http://localhost:5173'
+    // origin: 'http://localhost:5173'
+    origin: '*'
 }))
 
 app.use('/api/users', userRoutes);
 app.use('/api/admin',adminRoutes)
-async function get(){
-    const result = await getAiResponse;
-    console.log(result)
-}
-get()
+
 
 
 app.listen(3000, () => {

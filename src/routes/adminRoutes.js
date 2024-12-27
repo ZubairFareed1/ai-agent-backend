@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const router = express.Router();
-const { fileUpload } = require('../controllers/adminController');
+const { fileUpload, InsertWord, getPreventWords, deletePreventWords } = require('../controllers/adminController');
 
 // Configure multer
 const storage = multer.diskStorage({
@@ -16,5 +16,8 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 router.route('/fileupload').post(upload.single('file'), fileUpload);
+router.route('/prevent-words').post(InsertWord);
+router.route('/prevent-words').get(getPreventWords);
+router.route('/prevent-words').delete(deletePreventWords);
 
 module.exports = router;

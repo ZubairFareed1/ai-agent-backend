@@ -56,11 +56,17 @@ exports.userLogin = async (req, res) => {
         [user.rows[0].user_id]
       );
       const dashboardData = {
-        
+        token: token,
         user: user.rows[0],
-        conversation: conversation.rows
       }
-      res.status(200).json({token});
+      if(conversation.rows.length > 0){
+        await pool.query(
+          "INSERT INTO login_history (user_id, timestamp) VALUES ($1, $2);",
+          [user.rows[0].user_id, new Date()]
+        );
+        dashboardData.conversation = conversation.rows[0];
+      }
+      res.status(200).json({dashboardData});
 
   } catch (err) {
     console.error(err.message);
@@ -113,11 +119,7 @@ exports.userLogin = async (req, res) => {
 
     
     exports.continueConversation = async (req, res) => {
-      console.log('Request received:', {
-        method: req.method,
-        headers: req.headers,
-        body: req.body,
-    });      try{
+         try{
         const {user_id, conversation_id, query_text} = req.body;
         const conversation = await pool.query('SELECT * FROM conversation WHERE conversation_id = $1', [conversation_id])
         if(conversation.rows.length === 0 ){
@@ -141,7 +143,7 @@ exports.userLogin = async (req, res) => {
           query: query.rows[0],
           response: response.rows[0]
         }
-        console.log(finalData)
+        // console.log(finalData)
         
         res.status(201).json( finalData )
         
@@ -184,6 +186,7 @@ exports.getAllConversation = async (req, res) => {
             AND c.user_id = $1
             ORDER BY 
             c.started_at DESC;
+            
   `;
 
   try {
@@ -220,5 +223,36 @@ exports.getConversationById = async (req, res) => {
   }catch(error){
     console.error(error.message)
 
+  }
+}
+
+exports.getLoginHistory = async (req, res) => {
+  const { userId } = req.body;
+  // const userId = 14;
+  // console.log({userId:userId})
+
+  try {
+    const loginHistory = await pool.query('SELECT * FROM login_history WHERE user_id = $1 ORDER BY timestamp DESC;', [userId]);
+    // console.log({loginHistory:loginHistory.rows})
+    res.status(200).json({ loginHistory: loginHistory.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error fetching login history' });
+  }
+}
+
+
+// get user Info
+exports.getUserInfo = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const user = await pool.query('SELECT * FROM users WHERE user_id = $1', [userId]);
+    if (user.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.status(200).json({ user: user.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error fetching user information' });
   }
 }
