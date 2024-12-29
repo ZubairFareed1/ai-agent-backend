@@ -1,9 +1,11 @@
 const express = require('express');
 const getAiResponse = require('../src/ai_model/aiModel')
 const app = express();
+const path = require('path')
 const cors = require('cors')
 const userRoutes = require('./routes/userRoutes');
 const adminRoutes = require('./routes/adminRoutes')
+app.use('/src/profile_picture', express.static(path.join(__dirname, 'profile_picture')))
 app.use(express.json());
 app.use(cors({
     // origin: 'http://localhost:5173'

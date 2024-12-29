@@ -76,12 +76,8 @@ exports.userLogin = async (req, res) => {
 };
 
 
-
-
-
-
     // get All users
-    exports.getUsers = async (req, res) => {
+exports.getUsers = async (req, res) => {
       try{
         const users = await pool.query("SELECT * FROM users;");
         res.json(users.rows);
@@ -92,7 +88,7 @@ exports.userLogin = async (req, res) => {
 
 
     // New Conversation
-    exports.newConversation = async (req, res) => {
+exports.newConversation = async (req, res) => {
       try{
         const {user_id, query_text} = req.body;
         
@@ -118,7 +114,7 @@ exports.userLogin = async (req, res) => {
     }
 
     
-    exports.continueConversation = async (req, res) => {
+exports.continueConversation = async (req, res) => {
          try{
         const {user_id, conversation_id, query_text} = req.body;
         const conversation = await pool.query('SELECT * FROM conversation WHERE conversation_id = $1', [conversation_id])
@@ -246,7 +242,7 @@ exports.getLoginHistory = async (req, res) => {
 exports.getUserInfo = async (req, res) => {
   const { userId } = req.params;
   try {
-    const user = await pool.query('SELECT * FROM users WHERE user_id = $1', [userId]);
+    const user = await pool.query('SELECT *, CONCAT(first_name, \' \', last_name) AS full_name FROM users WHERE user_id = $1', [userId]);
     if (user.rows.length === 0) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -254,5 +250,80 @@ exports.getUserInfo = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Error fetching user information' });
+  }
+}
+
+// delete conversation
+exports.deleteConversation = async (req, res) => {
+  const { conversation_id } = req.params;
+  try {
+    const conversation = await pool.query('SELECT * FROM conversation WHERE conversation_id = $1', [conversation_id]);
+    if (conversation.rows.length === 0) {
+      return res.status(404).json({ message: 'Conversation not found' });
+    }
+    await pool.query('DELETE FROM query WHERE conversation_id = $1', [conversation_id]);
+    await pool.query('DELETE FROM ai_response WHERE conversation_id = $1', [conversation_id]);
+    await pool.query('DELETE FROM conversation WHERE conversation_id = $1', [conversation_id]);
+    res.status(200).json({ message: 'Conversation deleted successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error deleting conversation' });
+  }
+}
+
+
+exports.updateUser = async (req, res) => {
+  const { userId } = req.params;
+  const { first_name, last_name, email, password } = req.body;
+  console.log(password)
+  try {
+    const user = await pool.query('SELECT * FROM users WHERE user_id = $1', [userId]);
+    if (user.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await pool.query('UPDATE users SET first_name = $1, last_name = $2, email = $3, password = $4 WHERE user_id = $5', [first_name, last_name, email, hashedPassword, userId]);
+    res.status(200).json({ message: 'User updated successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error updating user' });
+  }
+}
+
+
+//update user profile picture
+exports.updateProfilePicture = async (req, res) => {
+  const { userId } = req.params;
+  const { profile_picture } = req.body;
+  try {
+    const user = await pool.query('SELECT * FROM users WHERE user_id = $1', [userId]);
+    if (user.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    const fileUrl = `${req.protocol}://${req.get('host')}/src/profile_picture/${req.file.filename}`;
+
+    await pool.query('UPDATE users SET profile_picture_url = $1 WHERE user_id = $2 RETURNING *', [fileUrl, userId]);
+    const updatedUser = await pool.query('SELECT profile_picture_url FROM users WHERE user_id = $1', [userId]);
+    console.log(updatedUser.rows[0])
+    
+    res.status(200).json(updatedUser.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error updating profile picture' });
+  }
+}
+
+//get user profile picture
+exports.getProfilePicture = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const user = await pool.query('SELECT profile_picture_url FROM users WHERE user_id = $1', [userId]);
+    if (user.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.status(200).json({ profile_picture_url: user.rows[0].profile_picture_url });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error fetching profile picture' });
   }
 }

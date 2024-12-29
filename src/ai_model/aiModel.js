@@ -24,27 +24,21 @@ async function getAiResponse(query) {
             }
         );
 
-        // Extract result
         const result = response.data;
 
-      //   console.log(result)
-        const answer = result.answer || ""; // Extract answer
-        const score = result.score || 0; // Extract score (if available)
+        const answer = result.answer || "";
+        const score = result.score || 0;
         
-        // // Validation: Check if the answer is meaningful and high confidence
-        const isAnswerValid = answer.trim() !== ""; // Ensure the answer is non-empty
+        const isAnswerValid = answer.trim() !== "";
         
-        // // Respond based on validation
         const finalResponse = (isAnswerValid && score > 0.05)
         ? `${answer}`
         : "Try another question, as the answer is not in the given context.";
         
-      //   console.log(finalResponse);
           return finalResponse;
     } catch (error) {
         console.error("Error while processing the question:", error.message);
     }
 }
 
-// getAiResponse("When Allama Iqbal dead?")
 module.exports = getAiResponse

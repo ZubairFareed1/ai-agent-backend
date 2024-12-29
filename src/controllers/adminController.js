@@ -40,7 +40,7 @@ exports.InsertWord = async (req, res) => {
 // get prevent words
 exports.getPreventWords = async (req, res) => {
     try {
-        const query = 'SELECT keyword_id as id ,keyword_data as word FROM keywords WHERE admin_id = $1';
+        const query = 'SELECT keyword_id as id ,keyword_data as word FROM keywords WHERE admin_id = $1 ORDER BY keyword_id DESC';
         const result = await pool.query(query,[2]);
         console.log(result.rows)
         res.status(200).send(result.rows);
