@@ -34,6 +34,5 @@ router.route('/delete_conversation/:conversation_id').delete(deleteConversation)
 router.route('/update_user/:userId').put(authenticateToken, updateUser)
 router.route('/update_profile_picture/:userId').post(upload.single('image'), updateProfilePicture)
 router.route('/profile_picture/:userId').get(authenticateToken,getProfilePicture)
-// router.route('/user').get((req,res)=>{res.status(200).json({message:"this is message"})})
 
 module.exports = router;

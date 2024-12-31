@@ -10,8 +10,7 @@ exports.fileUpload = async (req, res) => {
         }
         //extract text from pdf
         const text = await ExtractText(file);
-        console.log(file); // Log the file information for debugging
-        console.log(text)
+        
         //insert text into database
         const query = 'INSERT INTO knowledge_base (admin_id, knowledge_base) VALUES ( $1,$2)';
         const values = [2,text];
@@ -43,7 +42,7 @@ exports.getPreventWords = async (req, res) => {
         const query = 'SELECT keyword_id as id ,keyword_data as word FROM keywords WHERE admin_id = $1 ORDER BY keyword_id DESC';
         const result = await pool.query(query,[2]);
         console.log(result.rows)
-        res.status(200).send(result.rows);
+        res.status(200).json(result.rows);
     } catch (error) {
         console.error(error);
         res.status(500).send('Internal Server Error');
@@ -59,6 +58,31 @@ exports.deletePreventWords = async (req, res) => {
         const query = 'DELETE FROM keywords WHERE keyword_id = $1';
         await pool.query(query, [id]);
         res.status(200).send('Word deleted successfully.');
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Internal Server Error');
+    }
+}
+
+//get Knowledge base
+exports.getKnowledgeBase = async (req, res) => {
+    try {
+        const query = 'SELECT knowledge_base_id as id, knowledge_base as text FROM knowledge_base WHERE admin_id = $1 ORDER BY knowledge_base_id DESC';
+        const result = await pool.query(query, [2]);
+        res.status(200).json(result.rows);
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Internal Server Error');
+    }
+}
+
+// Delete Knowledge base
+exports.deleteKnowledgeBase = async (req, res) => {
+    try {
+        const { id } = req.body;
+        const query = 'DELETE FROM knowledge_base WHERE knowledge_base_id = $1';
+        await pool.query(query, [id]);
+        res.status(200).send('Knowledge base deleted successfully.');
     } catch (error) {
         console.error(error);
         res.status(500).send('Internal Server Error');

@@ -8,7 +8,7 @@ const getAiResponse = require('../ai_model/aiModel')
 // create a new user
 exports.createUser = async (req, res) => {
   try {
-    const { first_name, last_name, email, password } = req.body;
+    const { firstName, lastName, email, password } = req.body;
 
     const existingUser = await pool.query(
       "SELECT * FROM users WHERE email = $1",
@@ -21,9 +21,9 @@ exports.createUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = await pool.query(
       "INSERT INTO users (first_name, last_name, email, password) VALUES($1, $2, $3, $4) RETURNING *",
-      [first_name, last_name, email, hashedPassword]
+      [firstName, lastName, email, hashedPassword]
     );
-    res.json(newUser.rows[0]);
+    res.status(201).json({msg:'user created successfully.'});
   } catch (err) {
     console.error(err.message);
   }
@@ -47,7 +47,7 @@ exports.userLogin = async (req, res) => {
 
     const validPassword = await bcrypt.compare(password, user.rows[0].password);
     if (!validPassword) {
-      return res.status(401).json({"msg":"Email or password are incorrect"});
+      return res.status(401).json("Email or password are incorrect");
     }
     
       const token = jwt.sign({ email: user.rows[0].email }, SECRET_KEY,{expiresIn:'1 hour'});
@@ -159,7 +159,6 @@ exports.getAllConversation = async (req, res) => {
   c.conversation_id,
   c.user_id,
   c.started_at,
-  c.ended_at,
   q.query_data AS first_query,
   r.conversation_data AS first_response
   FROM 

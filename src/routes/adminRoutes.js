@@ -1,15 +1,21 @@
 const express = require('express');
 const multer = require('multer');
 const router = express.Router();
-const { fileUpload, InsertWord, getPreventWords, deletePreventWords } = require('../controllers/adminController');
+const {
+     fileUpload,
+     InsertWord, 
+     getPreventWords, 
+     deletePreventWords,
+     getKnowledgeBase,
+     deleteKnowledgeBase
+     } = require('../controllers/adminController');
 
-// Configure multer
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/'); // Directory where files will be saved
+        cb(null, 'uploads/'); 
     },
     filename: (req, file, cb) => {
-        cb(null, `${Date.now()}-${file.originalname}`); // File naming convention
+        cb(null, `${Date.now()}-${file.originalname}`); 
     }
 });
 
@@ -19,5 +25,7 @@ router.route('/fileupload').post(upload.single('file'), fileUpload);
 router.route('/prevent-words').post(InsertWord);
 router.route('/prevent-words').get(getPreventWords);
 router.route('/prevent-words').delete(deletePreventWords);
+router.route('/knowledge-base').get(getKnowledgeBase);
+router.route('/knowledge-base').delete(deleteKnowledgeBase);
 
 module.exports = router;
